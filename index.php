@@ -7,6 +7,7 @@ function print_pr($data){
 }
 
 $news=ORM::Factory(4);
+$news->Where("WIDTH", "=", "160");
 $news_list=$news->FindAll();
 
 foreach ($news_list as $item){
@@ -14,8 +15,15 @@ foreach ($news_list as $item){
     print_pr($tmp);
     echo $item->COLOR;
 }
-//$news=ORM::Factory(1);
-//$news->Where("ID","=",2);
+/*
+$news=ORM::Factory(1);
+$news->Where("ID","=",2);
+$tmp=$item->AsArray();
+foreach ($tmp as $code=>$tmp_item){
+    if (strpos($code, "~")===FALSE)
+    echo '"'.$code.'",';;
+};
+*/
 //
 //$news->Find();
 //print_pr($news);
