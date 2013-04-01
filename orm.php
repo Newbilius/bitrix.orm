@@ -9,7 +9,6 @@ if (CModule::IncludeModule("iblock")) {
  * подгрузка разноименных классов
  * сохранение
  * сложные запросы на поиск
- * постраничная навигация
  * группировка
  * создание новых
  * проверки, перехват и генерация ошибок
@@ -50,6 +49,14 @@ class ORM {
         return $this->_res->SelectedRowsCount();
     }
 
+    public function ClearLimit(){
+        $this->arNavStartParams=false;
+    }
+    
+    public function Limit($count,$page=1){
+        $this->arNavStartParams=Array("nPageSize"=>$count,"iNumPage"=>$page);
+    }
+    
     public function ClearOrder(){
         $this->arOrder=array();
     }
