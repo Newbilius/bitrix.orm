@@ -1,7 +1,6 @@
 <?php
 
-if (CModule::IncludeModule("iblock"))
-    ;
+if (CModule::IncludeModule("iblock")){};
 
 class ORM {
 
@@ -15,7 +14,10 @@ class ORM {
     
     protected $_res = false;
     protected $_data;
+    protected $_data_props;
+    
     protected $_changed_fields=array();
+    protected $_changed_props=array();
 
     public function Where($what,$how,$where){
         $this->arFilterBase[]=Array(
@@ -43,6 +45,7 @@ class ORM {
 
     protected function _LoadDataFromBase() {
         if ($tmp_data = $this->_res->GetNextElement()) {
+            $this->_data_props=$tmp_data->GetProperties();
             $this->_data = $tmp_data->GetFields();
         }
         return $tmp_data;
@@ -78,24 +81,33 @@ class ORM {
     }
 
     public function AsArray() {
-        return $this->_data;
+        $tmp=$this->_data;
+        foreach ($this->_data_props as $prop){
+            $tmp['PROPS'][$prop['CODE']]=$prop['VALUE'];
+        }
+        return $tmp;
     }
 
     public function __set($name, $value) {
+        $ok=false;
         if (isset($this->_data[$name])) {
             $this->_changed_fields[$name] = $name;
             $this->_data[$name] = $value;
-        } else {
-            die("несуществующе поле {$name}");  //@todo эксепшн
-        };
+            $ok=true;
+        } 
+        
+        if (!$ok) die("несуществующе поле {$name}");  //@todo эксепшн
     }
 
-    public function &__get($name) {
+    public function __get($name) {
         if (isset($this->_data[$name])) {
             return $this->_data[$name];
-        } else {
-            die("несуществующе поле {$name}");  //@todo эксепшн
+        };
+        if (isset($this->_data_props[$name])){
+            return $this->_data_props[$name]['VALUE'];
         }
+        
+        die("несуществующе поле {$name}");  //@todo эксепшн
     }
 
 }
