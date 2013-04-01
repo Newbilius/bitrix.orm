@@ -12,6 +12,8 @@ if (CModule::IncludeModule("iblock")){};
  * группировка
  * сортировка
  * число найденных
+ * создание новых
+ * перехват ошбиок
  */
 class ORMOptions{
     public static $standart_fields=Array("ID","TIMESTAMP_X","TIMESTAMP_X_UNIX","MODIFIED_BY",
@@ -38,6 +40,7 @@ class ORM {
     protected $_res = false;
     protected $_data;
     protected $_data_props;
+    protected $loaded=false;
     
     protected $_changed_fields=array();
     protected $_changed_props=array();
@@ -64,14 +67,17 @@ class ORM {
             "how"=>$how,
             "where"=>$where
         );
+        return $this;
     }
     
     public function SetIBlockID($id) {
         $this->IBlockID = $id;
+        return $this;
     }
 
     public function GetIBlockID($id) {
         return $this->IBlockID;
+        return $this;
     }
 
     static public function Factory($id) {
@@ -91,6 +97,7 @@ class ORM {
         if ($tmp_data = $this->_res->GetNextElement()) {
             $this->_data_props=$tmp_data->GetProperties();
             $this->_data = $tmp_data->GetFields();
+            $this->loaded=true;
         }
         return $tmp_data;
     }
@@ -104,7 +111,7 @@ class ORM {
 
     protected function _FindGo() {
         $this->_PrepareDatas();
-        print_pr($this->arFilter);
+        //print_pr($this->arFilter);
         $this->_res = CIBlockElement::GetList(
                         $this->arOrder, $this->arFilter, $this->arGroupBy, $this->arNavStartParams, $this->arSelectFields
         );
@@ -142,10 +149,12 @@ class ORM {
         };
         if (isset($this->_data_props[$name])){
             $this->_data_props[$name]['VALUE']=$value;
+            $this->_changed_props[$name] = $name;
             $ok=true;
         }
         
         if (!$ok) die("несуществующе поле {$name}");  //@todo эксепшн
+        return $this;
     }
 
     public function __get($name) {
@@ -157,6 +166,21 @@ class ORM {
         }
         
         die("несуществующе поле {$name}");  //@todo эксепшн
+    }
+    
+    public function Save(){
+        
+    }
+    
+    public function Delete($id=0){
+        $ELEMENT_ID=$id;
+        if ($ELEMENT_ID==0){
+            $ELEMENT_ID=$this->_data['ID'];
+            $this->_data_props=array();
+            $this->_data = array();
+        }
+        $this->loaded=false;
+        return CIBlockElement::Delete($ELEMENT_ID);
     }
 
 }
