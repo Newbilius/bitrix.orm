@@ -6,11 +6,13 @@ function print_pr($data){
     echo "<pre>".print_r($data,true)."</pre>";
 }
 
-$news=ORM::Factory(4);
-$news->Where("WIDTH", "=", "160");
+$news=ORM::Factory("furniture_offers");
+$news->Where("WIDTH", "<", "180");
 $news_list=$news->FindAll();
 
 foreach ($news_list as $item){
+    $item->NAME.=' (Тестинг\'95)';
+    //$item->WIDTH+=42;
     $tmp=$item->AsArray();
     print_pr($tmp);
     echo $item->COLOR;

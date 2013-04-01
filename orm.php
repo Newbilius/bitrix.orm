@@ -2,6 +2,17 @@
 
 if (CModule::IncludeModule("iblock")){};
 
+/*TODO
+ * 
+ * подгрузка разноименных классов
+ * сохранение
+ * сложные запросы на поиск
+ * постраничная навигация
+ * проверки
+ * группировка
+ * сортировка
+ * число найденных
+ */
 class ORMOptions{
     public static $standart_fields=Array("ID","TIMESTAMP_X","TIMESTAMP_X_UNIX","MODIFIED_BY",
         "DATE_CREATE","DATE_CREATE_UNIX","CREATED_BY","IBLOCK_ID","IBLOCK_SECTION_ID",
@@ -67,7 +78,12 @@ class ORM {
         $obj = new ORM();
         if (is_numeric($id)) {
             $obj->SetIBlockID($id);
+        }else{
+            $res = CIBlock::GetList(Array(),Array("CODE"=>$id));
+            $ar_res = $res->Fetch();
+            $obj->SetIBlockID($ar_res['ID']);
         }
+        
         return $obj;
     }
 
@@ -123,7 +139,11 @@ class ORM {
             $this->_changed_fields[$name] = $name;
             $this->_data[$name] = $value;
             $ok=true;
-        } 
+        };
+        if (isset($this->_data_props[$name])){
+            $this->_data_props[$name]['VALUE']=$value;
+            $ok=true;
+        }
         
         if (!$ok) die("несуществующе поле {$name}");  //@todo эксепшн
     }
