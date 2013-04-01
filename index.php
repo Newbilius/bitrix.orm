@@ -7,6 +7,8 @@ function print_pr($data){
 }
 
 $news=ORM::Factory(1);
+$news->Order("ID", "desc");
+$news->ClearOrder();
 $news_list=$news->FindAll();
 
 foreach ($news_list as $item){

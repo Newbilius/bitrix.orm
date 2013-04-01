@@ -11,7 +11,6 @@ if (CModule::IncludeModule("iblock")) {
  * сложные запросы на поиск
  * постраничная навигация
  * группировка
- * сортировка
  * создание новых
  * проверки, перехват и генерация ошибок
  */
@@ -51,6 +50,22 @@ class ORM {
         return $this->_res->SelectedRowsCount();
     }
 
+    public function ClearOrder(){
+        $this->arOrder=array();
+    }
+    public function ClearFilter(){
+        $this->arFilter=array();
+    }
+    
+    protected function _PrepareOrderHow($how){
+        $true_array = Array("asc","nulls,asc","asc,nulls","desc","nulls,desc","desc,null");
+        
+        if (!in_array(strtolower($how), $true_array)) {
+            return "ASC";
+        }
+        return $how;
+    }
+    
     protected function _PrepareWhereHow($how) {
         $true_array = Array("", "!", "><", "!><", "=", "%", "?", ">", "<", ">=", "<=");
         if (!in_array($how, $true_array)) {
@@ -61,6 +76,11 @@ class ORM {
         return $how;
     }
 
+    public function Order($what,$how){
+        $how=$this->_PrepareOrderHow($how);
+        $this->arOrder[$what]=$how;
+    }
+    
     public function Where($what, $how, $where) {
         $how = $this->_PrepareWhereHow($how);
         if (!in_array($what, ORMOptions::$standart_fields)) {
@@ -75,6 +95,10 @@ class ORM {
             "where" => $where
         );
         return $this;
+    }
+    
+    public function AndWhere($what, $how, $where) {
+        return $this->Where($what, $how, $where);
     }
 
     public function SetIBlockID($id) {
