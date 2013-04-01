@@ -6,6 +6,15 @@ function print_pr($data){
     echo "<pre>".print_r($data,true)."</pre>";
 }
 
+$news=ORM::Factory(1);
+$news_list=$news->FindAll();
+
+foreach ($news_list as $item){
+    $tmp=$item->AsArray();
+    echo $item->NAME." (".$item->ID.")";
+    echo "<br>";
+}
+echo "<hr>Всего:".$news->GetCount();
 
 /*
 $news=ORM::Factory(1);
@@ -13,6 +22,7 @@ $data=$news->Where("ID","=",100)->Find();
 $data->Delete();
 print_pr($data->ASArray());
 */
+
 //$news=ORM::Factory("furniture_offers");
 //$news->Where("WIDTH", "", "180");
 //$news_list=$news->FindAll();
