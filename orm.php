@@ -5,7 +5,6 @@ if (CModule::IncludeModule("iblock")) {
 };
 
 /* @todo сложные запросы на поиск
- * @todo сеттеры, геттеры
  */
 
 class ORM {
@@ -38,15 +37,15 @@ class ORM {
         "CREATED_USER_NAME", "LANG_DIR", "LID", "IBLOCK_TYPE_ID", "IBLOCK_CODE", "IBLOCK_NAME",
         "IBLOCK_EXTERNAL_ID", "DETAIL_PAGE_URL", "LIST_PAGE_URL", "CREATED_DATE", "BP_PUBLISHED");
     protected $standart_props = false;
-    protected $auto_getters=array();
-    protected $auto_setters=array();
+    protected $auto_getters = array();
+    protected $auto_setters = array();
 
-    protected function IblockSet(){
-        if ($this->IBlockID==0){
+    protected function IblockSet() {
+        if ($this->IBlockID == 0) {
             throw new Exception("для этого действия нужно сначала установить инфоблок");
         }
     }
-    
+
     public static function GetClassName($name) {
         if (class_exists($name . "BitrixOrm")) {
             $name = $name . "BitrixOrm";
@@ -72,7 +71,7 @@ class ORM {
     }
 
     public function GetCount() {
-        if ($this->_res){
+        if ($this->_res) {
             return $this->_res->SelectedRowsCount();
         }
     }
@@ -288,27 +287,32 @@ class ORM {
             throw new Exception("поле {$name} изменять нельзя!");
         }
         $ok = false;
-        if (isset($this->_data[$name])) {
-            $this->_changed_fields[$name] = $name;
-            $this->_data[$name] = $value;
-            $ok = true;
-        };
-        if (isset($this->_data_props[$name])) {
-            if (isset($this->_data_props[$name]["VALUE_ENUM_ID"])) {
-                $this->_data_props[$name]["VALUE_ENUM_ID"] = $value;
-                $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $name, "ID" => $value));
-                $property_enum_value = $property_enum->GetNext();
-                if ($property_enum_value['VALUE']) {
-                    $this->_data_props[$name]['VALUE'] = $property_enum_value['VALUE'];
-                } else {
-                    throw new Exception("нет такого значения свойства");
-                }
-            } else {
-                $this->_data_props[$name]['VALUE'] = $value;
+        if (isset($this->auto_setters[$name])) {
+            $method_name=$this->auto_setters[$name];
+            $ok = $this->$method_name($value);
+        } else {
+            if (isset($this->_data[$name])) {
+                $this->_changed_fields[$name] = $name;
+                $this->_data[$name] = $value;
+                $ok = true;
             };
-            $this->_changed_props[$name] = $name;
-            $ok = true;
-        }
+            if (isset($this->_data_props[$name])) {
+                if (isset($this->_data_props[$name]["VALUE_ENUM_ID"])) {
+                    $this->_data_props[$name]["VALUE_ENUM_ID"] = $value;
+                    $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $name, "ID" => $value));
+                    $property_enum_value = $property_enum->GetNext();
+                    if ($property_enum_value['VALUE']) {
+                        $this->_data_props[$name]['VALUE'] = $property_enum_value['VALUE'];
+                    } else {
+                        throw new Exception("нет такого значения свойства");
+                    }
+                } else {
+                    $this->_data_props[$name]['VALUE'] = $value;
+                };
+                $this->_changed_props[$name] = $name;
+                $ok = true;
+            }
+        };
 
         if (!$ok)
             throw new Exception("несуществующе поле {$name}");
@@ -317,17 +321,21 @@ class ORM {
 
     public function &__get($name) {
         $this->IblockSet();
-        if (isset($this->_data[$name])) {
-            return $this->_data[$name];
-        } elseif (isset($this->_data_props[$name])) {
-            return $this->_data_props[$name]['VALUE'];
+        if (isset($this->auto_getters[$name])) {
+            $method_name=$this->auto_getters[$name];
+            return $this->$method_name($value);
         } else {
-            $name2 = str_replace("__ID", "", $name);
-            if (isset($this->_data_props[$name2])) {
-                return $this->_data_props[$name2]['VALUE_ENUM_ID'];
-            }
+            if (isset($this->_data[$name])) {
+                return $this->_data[$name];
+            } elseif (isset($this->_data_props[$name])) {
+                return $this->_data_props[$name]['VALUE'];
+            } else {
+                $name2 = str_replace("__ID", "", $name);
+                if (isset($this->_data_props[$name2])) {
+                    return $this->_data_props[$name2]['VALUE_ENUM_ID'];
+                }
+            };
         };
-
         throw new Exception("несуществующе поле {$name}");
     }
 
@@ -399,13 +407,12 @@ class ORM {
         } else {
             if (isset($this->_data_props[$name])) {
                 if (!is_array($this->_data_props[$name]['VALUE'])) {
-                    if ($this->_data_props[$name]['MULTIPLE']=="Y"){
-                        if ($this->_data_props[$name]['VALUE']){
-                            $this->_data_props[$name]['VALUE']=array($this->_data_props[$name]['VALUE']);
-                        }else{
-                            $this->_data_props[$name]['VALUE']=array();
+                    if ($this->_data_props[$name]['MULTIPLE'] == "Y") {
+                        if ($this->_data_props[$name]['VALUE']) {
+                            $this->_data_props[$name]['VALUE'] = array($this->_data_props[$name]['VALUE']);
+                        } else {
+                            $this->_data_props[$name]['VALUE'] = array();
                         }
-                        
                     };
                     print_pr($this->_data_props[$name]);
                 }

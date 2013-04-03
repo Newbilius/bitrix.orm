@@ -9,13 +9,31 @@ function print_pr($data) {
 
 class NewsBitrixORM extends ORM{
     protected $IBlockID=1;
+    protected $auto_getters = array("NAME"=>"GetNameValue");
+    protected $auto_setters = array("NAME"=>"SetNameValue");
     
     public function __construct($id = 0) {
         parent::__construct($id);
     }
+    
+    public function GetNameValue($value){
+        echo str_replace(" (имя новости!)", "", $this->_data["NAME"]);
+    }
+    public function SetNameValue($value){
+        $this->_data["NAME"]=$value." (имя новости!)";
+        $this->_changed_fields["NAME"]="NAME";
+        return true;
+    }
 }
 
+$news = ORM::Factory("news");
+$news->GetByID(102);
+$news->NAME="Новое таки имя";
+echo $news->NAME;
 
+
+print_pr($news->AsArray());
+/*
 $news = ORM::Factory(4);
 $news->GetByID(101);
 //$news->ELEM=Array();
@@ -28,7 +46,7 @@ $news->AddToArrayValue("WIDTH",25);
 $news->DETAIL_TEXT="<span style='colore:red;'>каналья!</span>";
 $news->DETAIL_TEXT_TYPE="html";
 $news->NAME="новость теста завтрашнего дня";
-
+*/
 /*$news = ORM::Factory("news");
 $news->GetByID(102);
 //$news->NAME="новость теста завтрашнего дня";
