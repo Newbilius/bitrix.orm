@@ -4,11 +4,9 @@ if (CModule::IncludeModule("iblock")) {
     
 };
 
-/* TODO
- * 
- * сложные запросы на поиск
- * проверить работу со множественными полями
- * проверки, перехват и генерация ошибок
+/* @todo сложные запросы на поиск
+ * @todo сеттеры, геттеры
+ * @todo проверки, перехват и генерация ошибок
  */
 
 class ORM {
@@ -41,7 +39,15 @@ class ORM {
         "CREATED_USER_NAME", "LANG_DIR", "LID", "IBLOCK_TYPE_ID", "IBLOCK_CODE", "IBLOCK_NAME",
         "IBLOCK_EXTERNAL_ID", "DETAIL_PAGE_URL", "LIST_PAGE_URL", "CREATED_DATE", "BP_PUBLISHED");
     protected $standart_props = false;
+    protected $auto_getters=array();
+    protected $auto_setters=array();
 
+    protected function IblockSet(){
+        if ($this->IBlockID==0){
+            throw new Exception("для этого действия нужно сначала установить инфоблок");
+        }
+    }
+    
     public static function GetClassName($name) {
         if (class_exists($name . "BitrixOrm")) {
             $name = $name . "BitrixOrm";
@@ -67,7 +73,9 @@ class ORM {
     }
 
     public function GetCount() {
-        return $this->_res->SelectedRowsCount();
+        if ($this->_res){
+            return $this->_res->SelectedRowsCount();
+        }
     }
 
     public function ClearLimit() {
@@ -234,6 +242,7 @@ class ORM {
     }
 
     protected function _FindGo() {
+        $this->IblockSet();
         $this->_PrepareDatas();
         $this->_res = CIBlockElement::GetList(
                         $this->arOrder, $this->arFilter, $this->arGroupBy, $this->arNavStartParams, $this->arSelectFields
@@ -275,6 +284,7 @@ class ORM {
     }
 
     public function __set($name, $value) {
+        $this->IblockSet();
         if (in_array($name, $this->nochange_name)) {
             throw new Exception("поле {$name} изменять нельзя!");
         }
@@ -307,6 +317,7 @@ class ORM {
     }
 
     public function &__get($name) {
+        $this->IblockSet();
         if (isset($this->_data[$name])) {
             return $this->_data[$name];
         } elseif (isset($this->_data_props[$name])) {
@@ -322,6 +333,7 @@ class ORM {
     }
 
     public function Delete() {
+        $this->IblockSet();
         $ELEMENT_ID = $this->_data['ID'];
         $this->_loaded = false;
         $this->_changed_fields = array();
@@ -381,6 +393,7 @@ class ORM {
     }
 
     public function AddToArrayValue($name, $value) {
+        $this->IblockSet();
         if (is_array($this->_data[$name])) {
             $this->_changed_fields[] = $name;
             $this->_data[$name][] = $value;
@@ -417,6 +430,7 @@ class ORM {
     }
 
     public function Save() {
+        $this->IblockSet();
         $data = $this->_PrepareUpdate();
         if (count($data) == 0)
             return true;

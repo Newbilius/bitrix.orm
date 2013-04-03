@@ -25,6 +25,9 @@ $news->AddToArrayValue("ELEM",89);
 $news->AddToArrayValue("ELEM",81);
 $news->AddToArrayValue("ELEM",84);
 $news->AddToArrayValue("WIDTH",25);
+$news->DETAIL_TEXT="<span style='colore:red;'>каналья!</span>";
+$news->DETAIL_TEXT_TYPE="html";
+$news->NAME="новость теста завтрашнего дня";
 
 /*$news = ORM::Factory("news");
 $news->GetByID(102);
