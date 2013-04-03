@@ -6,7 +6,6 @@ if (CModule::IncludeModule("iblock")) {
 
 /* TODO
  * 
- * подгрузка разноименных классов
  * сложные запросы на поиск
  * создание новых
  * проверки, перехват и генерация ошибок
@@ -14,8 +13,8 @@ if (CModule::IncludeModule("iblock")) {
 
 class ORM {
 
-    protected $IBlockID;
-    protected $IBlockName;
+    protected $IBlockID = 0;
+    protected $IBlockName = "";
     protected $arFilter = array();
     protected $arFilterBase = array();
     protected $arOrder = Array("ID" => "ASC");
@@ -41,6 +40,18 @@ class ORM {
         "CODE", "TAGS", "XML_ID", "EXTERNAL_ID", "TMP_ID", "USER_NAME", "LOCKED_USER_NAME",
         "CREATED_USER_NAME", "LANG_DIR", "LID", "IBLOCK_TYPE_ID", "IBLOCK_CODE", "IBLOCK_NAME",
         "IBLOCK_EXTERNAL_ID", "DETAIL_PAGE_URL", "LIST_PAGE_URL", "CREATED_DATE", "BP_PUBLISHED");
+
+    public static function GetClassName($name) {
+        if (class_exists($name . "BitrixOrm")) {
+            $name = $name . "BitrixOrm";
+        } elseif (class_exists(ucfirst($name) . "BitrixOrm")) {
+            $name = ucfirst($name) . "BitrixOrm";
+        } else {
+            $name = "ORM";
+        }
+
+        return $name;
+    }
 
     public function ClearGroup() {
         $this->arGroupBy = false;
@@ -124,17 +135,19 @@ class ORM {
     }
 
     public function SetIBlockID($id) {
-        $ok=false;
+        echo "сетиблок";
+        $ok = false;
         if (is_numeric($id)) {
-            if ($id!=0) $ok=true;
+            if ($id != 0)
+                $ok = true;
         } else {
             $res = CIBlock::GetList(Array(), Array("CODE" => $id));
             $ar_res = $res->Fetch();
-            $ok=true;
-            $id=$ar_res['ID'];
+            $ok = true;
+            $id = $ar_res['ID'];
         }
-        if ($ok==true)
-        $this->IBlockID = $id;
+        if ($ok == true)
+            $this->IBlockID = $id;
         return $this;
     }
 
@@ -143,12 +156,21 @@ class ORM {
         return $this;
     }
 
-    public function __construct($id=0) {
-        $this->SetIBlockID($id);
+    public function __construct($id = 0) {
+        if ($this->IBlockID == 0) {
+            if ($IBlockName != "") {
+                $id = $IBlockName;
+            }
+            $this->SetIBlockID($id);
+        }
     }
-    
+
     static public function Factory($id) {
-        $obj = new ORM($id);
+        $class_name = ORM::GetClassName($id);
+        if ($class_name == "ORM")
+            $obj = new ORM($id);
+        else
+            $obj = new $class_name();
 
         return $obj;
     }
@@ -191,11 +213,11 @@ class ORM {
         return $tmp_array;
     }
 
-    public function AsArray($clear_raw_data=false) {
+    public function AsArray($clear_raw_data = false) {
         $tmp = $this->_data;
-        if ($clear_raw_data){
-            foreach ($tmp as $codename=>&$clear_item){
-                if (strpos($codename,"~")!==FALSE){
+        if ($clear_raw_data) {
+            foreach ($tmp as $codename => &$clear_item) {
+                if (strpos($codename, "~") !== FALSE) {
                     unset($tmp[$codename]);
                 }
             }
@@ -266,7 +288,7 @@ class ORM {
 
     public function _Update() {
         if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
-            $this->_error_text = "Ни однои поле не изменено";
+            $this->_error_text = "Ни одно поле не изменено";
             return true;
         }
         $update = array();

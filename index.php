@@ -7,6 +7,15 @@ function print_pr($data) {
     echo "<pre>" . print_r($data, true) . "</pre>";
 }
 
+class NewsBitrixORM extends ORM{
+    protected $IBlockID=1;
+    
+    public function __construct($id = 0) {
+        echo "наследник!";
+        parent::__construct($id);
+    }
+}
+
 $news = ORM::Factory("news");
 $news->Where("ID", "=", 2)->Find();
 print_pr($news->AsArray(true));
