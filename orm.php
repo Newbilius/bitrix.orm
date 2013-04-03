@@ -9,7 +9,6 @@ if (CModule::IncludeModule("iblock")) {
  * подгрузка разноименных классов
  * сохранение
  * сложные запросы на поиск
- * группировка
  * создание новых
  * проверки, перехват и генерация ошибок
  */
@@ -45,6 +44,16 @@ class ORM {
     protected $_changed_fields = array();
     protected $_changed_props = array();
 
+    public function ClearGroup(){
+        $this->arGroupBy=false;
+    }
+    
+    public function Group($by){
+        if (!in_array($by, $this->arGroupBy)){
+            $this->arGroupBy[]=$by;
+        }
+    }
+    
     public function GetCount() {
         return $this->_res->SelectedRowsCount();
     }
