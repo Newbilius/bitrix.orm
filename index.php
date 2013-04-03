@@ -19,8 +19,13 @@ $news = ORM::Factory("news");
 $news->GetByID(102);
 //$news->NAME="новость теста завтрашнего дня";
 //$news->DETAIL_TEXT="<span style='colore:red;'>каналья!</span>";
-$news->DETAIL_TEXT_TYPE="html";
-$news->CODE="testcode";
+//$news->DETAIL_TEXT_TYPE="html";
+//$news->STRING0=array("12");
+$news->STRING0=array("12");
+$news->AddToArrayValue("STRING0",16);
+//$news->AddToArrayValue("STRING0",'тоже строчка');
+//$news->AddToArrayValue("STRING0",24);
+//$news->CODE="testcode";
 
 /*
  * $news = ORM::Factory(4);

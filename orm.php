@@ -7,6 +7,7 @@ if (CModule::IncludeModule("iblock")) {
 /* TODO
  * 
  * сложные запросы на поиск
+ * проверить работу со множественными полями
  * проверки, перехват и генерация ошибок
  */
 
@@ -129,8 +130,8 @@ class ORM {
         );
         return $this;
     }
-    
-    public function GetByID($id){
+
+    public function GetByID($id) {
         $this->Where("ID", "=", $id)->Find();
         return $this;
     }
@@ -140,7 +141,7 @@ class ORM {
     }
 
     protected function _Init() {
-        $this->_data=array();
+        $this->_data = array();
         foreach ($this->standart_fields as $field) {
             $this->_data[$field] = "";
         }
@@ -362,11 +363,12 @@ class ORM {
             return false;
         }
     }
+
     protected function _Create($update) {
-        $update['IBLOCK_ID']=$this->IBlockID;
+        $update['IBLOCK_ID'] = $this->IBlockID;
         if ($resID = $this->_tmp_el->Add($update)) {
             $this->_error_text = "";
-            $this->_data['ID']=$resID;
+            $this->_data['ID'] = $resID;
             return true;
         } else {
             $this->_error_text = $this->_tmp_el->LAST_ERROR;
@@ -376,6 +378,17 @@ class ORM {
 
     public function GetLastError() {
         return $this->_error_text;
+    }
+
+    public function AddToArrayValue($name, $value) {
+        if (is_array($this->_data[$name])) {
+            $this->_changed_fields[]=$name;
+            $this->_data[$name][] = $value;
+        }
+        if (is_array($this->_data_props[$name]['VALUE'])) {
+            $this->_data_props[$name]['VALUE'][]=$value;
+            $this->_changed_props[]=$name;
+        }
     }
 
     public function Save() {
