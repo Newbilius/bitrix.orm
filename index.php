@@ -11,16 +11,33 @@ class NewsBitrixORM extends ORM{
     protected $IBlockID=1;
     
     public function __construct($id = 0) {
-        echo "наследник!";
         parent::__construct($id);
     }
 }
 
 $news = ORM::Factory("news");
-$news->Where("ID", "=", 2)->Find();
-print_pr($news->AsArray(true));
+$news->GetByID(102);
+//$news->NAME="новость теста завтрашнего дня";
+//$news->DETAIL_TEXT="<span style='colore:red;'>каналья!</span>";
+$news->DETAIL_TEXT_TYPE="html";
+$news->CODE="testcode";
+
+/*
+ * $news = ORM::Factory(4);
+$news->Where("ID","=","101")->Find();
+$news->NAME="тест 2 возвращается";
+$news->COLOR = "ночной баклажан";
+$news->WIDTH=24;
+$news->NAME="тестовое предложение";
+$news->COLOR = "хитрого пони";
+$news->WIDTH = 25;
+*/
+print_pr($news->AsArray());
 //$news->Order("ID", "desc")->Where("ID", "=", "96")->Find();
-//print_pr($news->AsArray());
+//$news->NAME="новая новость 1";
+//$news->Where("ID", "=", 2)->Find();
+//print_pr($news->AsArray(true));
+//$news->Order("ID", "desc")->Where("ID", "=", "96")->Find();
 //echo "<hr>";
 //$news->NAME="Орион Чокопай";
 //$news->ID="9999";

@@ -7,7 +7,6 @@ if (CModule::IncludeModule("iblock")) {
 /* TODO
  * 
  * сложные запросы на поиск
- * создание новых
  * проверки, перехват и генерация ошибок
  */
 
@@ -22,8 +21,8 @@ class ORM {
     protected $arNavStartParams = false;
     protected $arSelectFields = Array();
     protected $_res = false;
-    protected $_data;
-    protected $_data_props;
+    protected $_data = array();
+    protected $_data_props = array();
     protected $_loaded = false;
     protected $_changed_fields = array();
     protected $_changed_props = array();
@@ -40,6 +39,7 @@ class ORM {
         "CODE", "TAGS", "XML_ID", "EXTERNAL_ID", "TMP_ID", "USER_NAME", "LOCKED_USER_NAME",
         "CREATED_USER_NAME", "LANG_DIR", "LID", "IBLOCK_TYPE_ID", "IBLOCK_CODE", "IBLOCK_NAME",
         "IBLOCK_EXTERNAL_ID", "DETAIL_PAGE_URL", "LIST_PAGE_URL", "CREATED_DATE", "BP_PUBLISHED");
+    protected $standart_props = false;
 
     public static function GetClassName($name) {
         if (class_exists($name . "BitrixOrm")) {
@@ -129,13 +129,53 @@ class ORM {
         );
         return $this;
     }
+    
+    public function GetByID($id){
+        $this->Where("ID", "=", $id)->Find();
+        return $this;
+    }
 
     public function AndWhere($what, $how, $where) {
         return $this->Where($what, $how, $where);
     }
 
+    protected function _Init() {
+        $this->_data=array();
+        foreach ($this->standart_fields as $field) {
+            $this->_data[$field] = "";
+        }
+        if ($this->standart_props === FALSE) {
+            $this->standart_props = array();
+            $properties = CIBlockProperty::GetList(Array("id" => "asc"), Array("ACTIVE" => "Y", "IBLOCK_ID" => $this->IBlockID));
+            while ($prop = $properties->GetNext()) {
+                $prop['VALUE'] = "";
+                if ($prop['PROPERTY_TYPE'] == "L") {
+                    $prop['VALUE_ENUM_ID'] = "";
+                }
+                if (isset($prop['DEFAULT_VALUE'])) {
+                    if ($prop['DEFAULT_VALUE']) {
+                        if (isset($prop['VALUE_ENUM_ID'])) {
+                            $prop['VALUE_ENUM_ID'] = $prop['DEFAULT_VALUE'];
+                            $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $prop['CODE'], "ID" => $prop['VALUE_ENUM_ID']));
+                            $property_enum_value = $property_enum->GetNext();
+                            if ($property_enum_value['VALUE']) {
+                                $prop['VALUE'] = $property_enum_value['VALUE'];
+                            }
+                        } else {
+                            $prop['VALUE'] = $prop['DEFAULT_VALUE'];
+                        }
+                    }
+                }
+                $this->standart_props[] = $prop;
+            }
+        };
+        $this->_data_props = array();
+        foreach ($this->standart_props as $prop) {
+            $this->_data_props[$prop['CODE']] = $prop;
+        }
+    }
+
     public function SetIBlockID($id) {
-        echo "сетиблок";
         $ok = false;
         if (is_numeric($id)) {
             if ($id != 0)
@@ -162,7 +202,8 @@ class ORM {
                 $id = $IBlockName;
             }
             $this->SetIBlockID($id);
-        }
+        };
+        $this->_Init();
     }
 
     static public function Factory($id) {
@@ -222,6 +263,7 @@ class ORM {
                 }
             }
         }
+        //print_pr($this->_data_props);
         foreach ($this->_data_props as $prop) {
             $tmp['PROPS'][$prop['CODE']] = $prop['VALUE'];
             if (isset($prop["VALUE_ENUM_ID"])) {
@@ -249,7 +291,7 @@ class ORM {
                 if ($property_enum_value['VALUE']) {
                     $this->_data_props[$name]['VALUE'] = $property_enum_value['VALUE'];
                 } else {
-                    die("нет такого значения свойства");
+                    throw new Exception("нет такого значения свойства");
                 }
             } else {
                 $this->_data_props[$name]['VALUE'] = $value;
@@ -259,7 +301,7 @@ class ORM {
         }
 
         if (!$ok)
-            die("несуществующе поле {$name}");  //@todo эксепшн
+            throw new Exception("несуществующе поле {$name}");
         return $this;
     }
 
@@ -275,7 +317,7 @@ class ORM {
             }
         };
 
-        die("несуществующе поле {$name}");  //@todo эксепшн
+        throw new Exception("несуществующе поле {$name}");
     }
 
     public function Delete() {
@@ -283,13 +325,14 @@ class ORM {
         $this->_loaded = false;
         $this->_changed_fields = array();
         $this->_changed_props = array();
+        $this->_Init();
         return CIBlockElement::Delete($ELEMENT_ID);
     }
 
-    public function _Update() {
+    public function _PrepareUpdate() {
         if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
             $this->_error_text = "Ни одно поле не изменено";
-            return true;
+            return array();
         }
         $update = array();
         foreach ($this->_changed_fields as &$field_name) {
@@ -304,13 +347,26 @@ class ORM {
                 }
             }
         };
-
         if ($this->_tmp_el == false) {
             $this->_tmp_el = new CIBlockElement;
         }
+        return $update;
+    }
 
+    protected function _Update($update) {
         if ($res = $this->_tmp_el->Update($this->_data['ID'], $update)) {
             $this->_error_text = "";
+            return true;
+        } else {
+            $this->_error_text = $this->_tmp_el->LAST_ERROR;
+            return false;
+        }
+    }
+    protected function _Create($update) {
+        $update['IBLOCK_ID']=$this->IBlockID;
+        if ($resID = $this->_tmp_el->Add($update)) {
+            $this->_error_text = "";
+            $this->_data['ID']=$resID;
             return true;
         } else {
             $this->_error_text = $this->_tmp_el->LAST_ERROR;
@@ -323,10 +379,14 @@ class ORM {
     }
 
     public function Save() {
+        $data = $this->_PrepareUpdate();
+        if (count($data) == 0)
+            return true;
+
         if ($this->_loaded) {
-            $this->_Update();
+            $this->_Update($data);
         } else {
-            $this->_Create();
+            $this->_Create($data);
         }
     }
 
