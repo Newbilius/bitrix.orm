@@ -306,7 +306,7 @@ class ORM {
         return $this;
     }
 
-    public function __get($name) {
+    public function &__get($name) {
         if (isset($this->_data[$name])) {
             return $this->_data[$name];
         } elseif (isset($this->_data_props[$name])) {
@@ -382,12 +382,37 @@ class ORM {
 
     public function AddToArrayValue($name, $value) {
         if (is_array($this->_data[$name])) {
-            $this->_changed_fields[]=$name;
+            $this->_changed_fields[] = $name;
             $this->_data[$name][] = $value;
+        } else {
+            if (isset($this->_data_props[$name])) {
+                if (!is_array($this->_data_props[$name]['VALUE'])) {
+                    if ($this->_data_props[$name]['MULTIPLE']=="Y"){
+                        if ($this->_data_props[$name]['VALUE']){
+                            $this->_data_props[$name]['VALUE']=array($this->_data_props[$name]['VALUE']);
+                        }else{
+                            $this->_data_props[$name]['VALUE']=array();
+                        }
+                        
+                    };
+                    print_pr($this->_data_props[$name]);
+                }
+            }
         }
         if (is_array($this->_data_props[$name]['VALUE'])) {
-            $this->_data_props[$name]['VALUE'][]=$value;
-            $this->_changed_props[]=$name;
+            if (isset($this->_data_props[$name]["VALUE_ENUM_ID"])) {
+                $this->_data_props[$name]["VALUE_ENUM_ID"][] = $value;
+                $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $name, "ID" => $value));
+                $property_enum_value = $property_enum->GetNext();
+                if ($property_enum_value['VALUE']) {
+                    $this->_data_props[$name]['VALUE'][] = $property_enum_value['VALUE'];
+                } else {
+                    throw new Exception("нет такого значения свойства");
+                }
+            } else {
+                $this->_data_props[$name]['VALUE'][] = $value;
+            }
+            $this->_changed_props[] = $name;
         }
     }
 

@@ -15,14 +15,25 @@ class NewsBitrixORM extends ORM{
     }
 }
 
-$news = ORM::Factory("news");
+
+$news = ORM::Factory(4);
+$news->GetByID(101);
+//$news->ELEM=Array();
+//print_pr($news);
+print_pr($news->AsArray());
+$news->AddToArrayValue("ELEM",89);
+$news->AddToArrayValue("ELEM",81);
+$news->AddToArrayValue("ELEM",84);
+$news->AddToArrayValue("WIDTH",25);
+
+/*$news = ORM::Factory("news");
 $news->GetByID(102);
 //$news->NAME="новость теста завтрашнего дня";
 //$news->DETAIL_TEXT="<span style='colore:red;'>каналья!</span>";
 //$news->DETAIL_TEXT_TYPE="html";
 //$news->STRING0=array("12");
 $news->STRING0=array("12");
-$news->AddToArrayValue("STRING0",16);
+$news->AddToArrayValue("STRING0",16);*/
 //$news->AddToArrayValue("STRING0",'тоже строчка');
 //$news->AddToArrayValue("STRING0",24);
 //$news->CODE="testcode";
@@ -37,7 +48,6 @@ $news->NAME="тестовое предложение";
 $news->COLOR = "хитрого пони";
 $news->WIDTH = 25;
 */
-print_pr($news->AsArray());
 //$news->Order("ID", "desc")->Where("ID", "=", "96")->Find();
 //$news->NAME="новая новость 1";
 //$news->Where("ID", "=", 2)->Find();
