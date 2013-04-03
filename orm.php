@@ -15,6 +15,7 @@ if (CModule::IncludeModule("iblock")) {
 class ORM {
 
     protected $IBlockID;
+    protected $IBlockName;
     protected $arFilter = array();
     protected $arFilterBase = array();
     protected $arOrder = Array("ID" => "ASC");
@@ -123,6 +124,16 @@ class ORM {
     }
 
     public function SetIBlockID($id) {
+        $ok=false;
+        if (is_numeric($id)) {
+            if ($id!=0) $ok=true;
+        } else {
+            $res = CIBlock::GetList(Array(), Array("CODE" => $id));
+            $ar_res = $res->Fetch();
+            $ok=true;
+            $id=$ar_res['ID'];
+        }
+        if ($ok==true)
         $this->IBlockID = $id;
         return $this;
     }
@@ -132,15 +143,12 @@ class ORM {
         return $this;
     }
 
+    public function __construct($id=0) {
+        $this->SetIBlockID($id);
+    }
+    
     static public function Factory($id) {
-        $obj = new ORM();
-        if (is_numeric($id)) {
-            $obj->SetIBlockID($id);
-        } else {
-            $res = CIBlock::GetList(Array(), Array("CODE" => $id));
-            $ar_res = $res->Fetch();
-            $obj->SetIBlockID($ar_res['ID']);
-        }
+        $obj = new ORM($id);
 
         return $obj;
     }
@@ -183,8 +191,15 @@ class ORM {
         return $tmp_array;
     }
 
-    public function AsArray() {
+    public function AsArray($clear_raw_data=false) {
         $tmp = $this->_data;
+        if ($clear_raw_data){
+            foreach ($tmp as $codename=>&$clear_item){
+                if (strpos($codename,"~")!==FALSE){
+                    unset($tmp[$codename]);
+                }
+            }
+        }
         foreach ($this->_data_props as $prop) {
             $tmp['PROPS'][$prop['CODE']] = $prop['VALUE'];
             if (isset($prop["VALUE_ENUM_ID"])) {

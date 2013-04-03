@@ -7,22 +7,21 @@ function print_pr($data) {
     echo "<pre>" . print_r($data, true) . "</pre>";
 }
 
-$news = ORM::Factory(4);
-$news->Order("ID", "desc")->Where("ID", "=", "96")->Find();
-print_pr($news->AsArray());
-echo "<hr>";
-$news->NAME="Орион Чокопай";
+$news = ORM::Factory("news");
+$news->Where("ID", "=", 2)->Find();
+print_pr($news->AsArray(true));
+//$news->Order("ID", "desc")->Where("ID", "=", "96")->Find();
+//print_pr($news->AsArray());
+//echo "<hr>";
+//$news->NAME="Орион Чокопай";
 //$news->ID="9999";
-$news->WIDTH = 25;
+//$news->WIDTH = 25;
 //$news->COLOR = "серобуромалиновый";
 //$news->NAME="";
-if (!$news->Save()) {
+if (!$news->Save()) 
+    {
     print_pr($news->GetLastError());
-    echo "<hr>";
-    echo print_pr($news->AsArray());
 }
-echo $news->WIDTH."<BR>";
-echo $news->WIDTH__ID;
 /*
   $news=ORM::Factory(1);
   $news->Order("ID", "desc");
