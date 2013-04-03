@@ -6,7 +6,6 @@ if (CModule::IncludeModule("iblock")) {
 
 /* @todo сложные запросы на поиск
  * @todo сеттеры, геттеры
- * @todo проверки, перехват и генерация ошибок
  */
 
 class ORM {
