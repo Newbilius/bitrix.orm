@@ -44,8 +44,8 @@ class ORM {
         "CREATED_USER_NAME", "LANG_DIR", "LID", "IBLOCK_TYPE_ID", "IBLOCK_CODE", "IBLOCK_NAME",
         "IBLOCK_EXTERNAL_ID", "DETAIL_PAGE_URL", "LIST_PAGE_URL", "CREATED_DATE", "BP_PUBLISHED");
     protected $standart_props = false;
-    protected $auto_getters = array();
-    protected $auto_setters = array();
+    protected $auto_getters = array(); //массив вида "поле"=>"функция обработки" при считывании
+    protected $auto_setters = array(); //массив вида "поле"=>"функция обработки" при записи
 
     protected function IblockSet() {
         if ($this->IBlockID == 0) {
@@ -53,6 +53,12 @@ class ORM {
         }
     }
 
+    /**
+     * Возвращает имя класса для фабрики.
+     * 
+     * @param string $name имя для определения
+     * @return string
+     */
     public static function GetClassName($name) {
         if (class_exists($name . "BitrixOrm")) {
             $name = $name . "BitrixOrm";
@@ -64,12 +70,23 @@ class ORM {
 
         return $name;
     }
-
+    
+    /**
+     * Сбрасывает группировку результатов запроса.
+     * 
+     * @return \ORM
+     */
     public function ClearGroup() {
         $this->arGroupBy = false;
         return $this;
     }
 
+    /**
+     * Включает группировку результатов запроса по полю $by
+     * 
+     * @param string $by
+     * @return \ORM
+     */
     public function Group($by) {
         if (!in_array($by, $this->arGroupBy)) {
             $this->arGroupBy[] = $by;
@@ -77,27 +94,55 @@ class ORM {
         return $this;
     }
 
+    /**
+     * Возвращает число найденных записей.
+     * 
+     * @return int
+     */
     public function GetCount() {
         if ($this->_res) {
             return $this->_res->SelectedRowsCount();
         }
+        return false;
     }
 
+    /**
+     * Отменяет ограничение на число найденных результатов запроса.
+     * 
+     * @return \ORM
+     */
     public function ClearLimit() {
         $this->arNavStartParams = false;
         return $this;
     }
 
+    /**
+     * Включает ограничение на число найденных элементов.
+     * 
+     * @param type $count число элементов на одной странице
+     * @param type $page страница при поиске
+     * @return \ORM
+     */
     public function Limit($count, $page = 1) {
         $this->arNavStartParams = Array("nPageSize" => $count, "iNumPage" => $page);
         return $this;
     }
 
+    /**
+     * Отменяет сортировку результатов поиска.
+     * 
+     * @return \ORM
+     */
     public function ClearOrder() {
         $this->arOrder = array();
         return $this;
     }
 
+    /**
+     * Отключает фильтрацию поиска.
+     * 
+     * @return \ORM
+     */
     public function ClearFilter() {
         $this->arFilter = array();
         return $this;
@@ -122,12 +167,27 @@ class ORM {
         return $how;
     }
 
+    /**
+     * Включает сортировку по полю <b>$what</b> в порядке <b>$how</b>
+     * 
+     * @param type $what по какому полю сортировать
+     * @param type $how порядок сортировки (по умолчанию "asc"; другие варианты - "nulls,asc", "asc,nulls", "desc", "nulls,desc", "desc,null")
+     * @return \ORM
+     */
     public function Order($what, $how) {
         $how = $this->_PrepareOrderHow($how);
         $this->arOrder[$what] = $how;
         return $this;
     }
 
+    /**
+     * Включает фильтрацию поиска.
+     * 
+     * @param string $what поле для фильтра
+     * @param type $how метод ограничения (по умолчанию "=")
+     * @param type $where значение для фильтра
+     * @return \ORM
+     */
     public function Where($what, $how, $where) {
         $how = $this->_PrepareWhereHow($how);
         if (!in_array($what, $this->standart_fields)) {
@@ -144,11 +204,25 @@ class ORM {
         return $this;
     }
 
+    /**
+     * Ищет запись по уникальному номеру.
+     * 
+     * @param type $id уникальный номер
+     * @return \ORM
+     */
     public function GetByID($id) {
         $this->Where("ID", "=", $id)->Find();
         return $this;
     }
 
+    /**
+     * В данный момент - синоним Where.
+     * 
+     * @param string $what поле для фильтра
+     * @param type $how метод ограничения (по умолчанию "=")
+     * @param type $where значение для фильтра
+     * @return \ORM
+     */
     public function AndWhere($what, $how, $where) {
         return $this->Where($what, $how, $where);
     }
@@ -189,6 +263,12 @@ class ORM {
         }
     }
 
+    /**
+     * Меняет установленный инфоблок.
+     * 
+     * @param mixde $id ID или CODE инфоблока.
+     * @return \ORM
+     */
     public function SetIBlockID($id) {
         $ok = false;
         if (is_numeric($id)) {
@@ -205,9 +285,13 @@ class ORM {
         return $this;
     }
 
-    public function GetIBlockID($id) {
+    /**
+     * Возвращает уникальный номер выбранного инфоблока.
+     * 
+     * @return int
+     */
+    public function GetIBlockID() {
         return $this->IBlockID;
-        return $this;
     }
 
     public function __construct($id = 0) {
@@ -220,6 +304,11 @@ class ORM {
         $this->_Init();
     }
 
+    /**
+     * Создает объект нужного класса (по умолчанию ORM)
+     * @param type $id
+     * @return \class_name
+     */
     static public function Factory($id) {
         $class_name = ORM::GetClassName($id);
         if ($class_name == "ORM")
@@ -254,12 +343,22 @@ class ORM {
         );
     }
 
+    /**
+     * Загружает первый найденный элемент согласно фильтру, сортировки и т.п.
+     * 
+     * @return \ORM
+     */
     public function Find() {
         $this->_FindGo();
         $this->_LoadDataFromBase();
         return $this;
     }
 
+    /**
+     * Возвращает массив объектов согласно фильтру, сортировки и т.п.
+     * 
+     * @return \ORM
+     */
     public function FindAll() {
         $tmp_array = array();
         $this->_FindGo();
@@ -269,6 +368,12 @@ class ORM {
         return $tmp_array;
     }
 
+    /**
+     * Возвращает значения всех полей и свойств как массив.
+     * 
+     * @param type $clear_raw_data при <b>true</b> очищает массив от свойств с преффиксом "~". По умолчанию <b>false</b>.
+     * @return array
+     */
     public function AsArray($clear_raw_data = false) {
         $tmp = $this->_data;
         if ($clear_raw_data) {
@@ -346,6 +451,11 @@ class ORM {
         throw new Exception("несуществующе поле {$name}");
     }
 
+    /**
+     * Удаляет текущий элемент. 
+     * 
+     * @return bool true в случае успешного удаления, в противном случае функция вернет false.
+     */
     public function Delete() {
         $this->IblockSet();
         $ELEMENT_ID = $this->_data['ID'];
@@ -356,7 +466,7 @@ class ORM {
         return CIBlockElement::Delete($ELEMENT_ID);
     }
 
-    public function _PrepareUpdate() {
+    protected function _PrepareUpdate() {
         if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
             $this->_error_text = "Ни одно поле не изменено";
             return array();
@@ -406,6 +516,14 @@ class ORM {
         return $this->_error_text;
     }
 
+    /**
+     * Добавляет значение в свойство-массив (пока - замена нерабочего обращения $obj->prop[]=)
+     * 
+     * @param string $name 
+     * @param mixed $value
+     * @return \ORM
+     * @throws Exception
+     */
     public function AddToArrayValue($name, $value) {
         $this->IblockSet();
         if (is_array($this->_data[$name])) {
@@ -440,8 +558,14 @@ class ORM {
             }
             $this->_changed_props[] = $name;
         }
+        return $this;
     }
 
+    /**
+     * Сохраняет текущий элемент (если не существует - создает, если существует - обновляет).
+     * 
+     * @return boolean
+     */
     public function Save() {
         $this->IblockSet();
         $data = $this->_PrepareUpdate();
@@ -449,10 +573,11 @@ class ORM {
             return true;
 
         if ($this->_loaded) {
-            $this->_Update($data);
+            return $this->_Update($data);
         } else {
-            $this->_Create($data);
+            return $this->_Create($data);
         }
+        return false;
     }
 
 }
