@@ -13,7 +13,9 @@ if (CModule::IncludeModule("iblock")) {
     
 };
 
-/* @todo сложные запросы на поиск
+/*
+@todo сложные запросы на поиск
+@todo перехват событий
  */
 
 class ORM {
@@ -385,12 +387,15 @@ class ORM {
                 }
             }
         }
-        //print_pr($this->_data_props);
+
         foreach ($this->_data_props as $prop) {
             $tmp['PROPS'][$prop['CODE']] = $prop['VALUE'];
             if (isset($prop["VALUE_ENUM_ID"])) {
                 $tmp['PROPS'][$prop['CODE'] . "__ID"] = $prop['VALUE_ENUM_ID'];
             }
+        }
+        foreach ($this->auto_getters as $_auto_get_name=>$_auto_get_func){
+            $tmp[$_auto_get_name]=$this->$_auto_get_func($tmp[$_auto_get_name]);
         }
         return $tmp;
     }
@@ -542,7 +547,6 @@ class ORM {
                             $this->_data_props[$name]['VALUE'] = array();
                         }
                     };
-                    print_pr($this->_data_props[$name]);
                 }
             }
         }
