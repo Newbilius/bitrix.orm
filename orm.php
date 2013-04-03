@@ -469,6 +469,7 @@ class ORM {
     }
 
     protected function _PrepareUpdate() {
+        $this->_error_text = "";
         if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
             $this->_error_text = "Ни одно поле не изменено";
             return array();
