@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Автор: Моисеев Дмитрий Алексеевич
  * Контактные данные: newbilius@gmail.com
@@ -7,9 +8,10 @@
  * Модуль для реализации простого ORM в 1С Битрикс.
  * Лицензия на использование - BSD3
  */
-
 //Подключает необходимый битрикс модуль. Можете выкинуть эту строку, если он у вас где то уже вызывается
-if (CModule::IncludeModule("iblock")) {};
+if (CModule::IncludeModule("iblock")) {
+    
+};
 
 /* @todo сложные запросы на поиск
  */
@@ -70,7 +72,7 @@ class ORM {
 
         return $name;
     }
-    
+
     /**
      * Сбрасывает группировку результатов запроса.
      * 
@@ -400,7 +402,7 @@ class ORM {
         }
         $ok = false;
         if (isset($this->auto_setters[$name])) {
-            $method_name=$this->auto_setters[$name];
+            $method_name = $this->auto_setters[$name];
             $ok = $this->$method_name($value);
         } else {
             if (isset($this->_data[$name])) {
@@ -434,7 +436,7 @@ class ORM {
     public function &__get($name) {
         $this->IblockSet();
         if (isset($this->auto_getters[$name])) {
-            $method_name=$this->auto_getters[$name];
+            $method_name = $this->auto_getters[$name];
             return $this->$method_name($value);
         } else {
             if (isset($this->_data[$name])) {
