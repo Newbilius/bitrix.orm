@@ -51,19 +51,13 @@ class ORM {
     protected $auto_getters = array(); //массив вида "поле"=>"функция обработки" при считывании
     protected $auto_setters = array(); //массив вида "поле"=>"функция обработки" при записи
 
-    protected function IblockSet() {
-        if ($this->IBlockID == 0) {
-            throw new Exception("для этого действия нужно сначала установить инфоблок");
-        }
-    }
-
     /**
      * Возвращает имя класса для фабрики.
      * 
      * @param string $name имя для определения
      * @return string
      */
-    public static function GetClassName($name) {
+    static public function GetClassName($name) {
         if (class_exists($name . "BitrixOrm")) {
             $name = $name . "BitrixOrm";
         } elseif (class_exists(ucfirst($name) . "BitrixOrm")) {
@@ -73,6 +67,21 @@ class ORM {
         }
 
         return $name;
+    }
+    
+    /**
+     * Создает объект нужного класса (по умолчанию ORM)
+     * @param type $id
+     * @return \class_name
+     */
+    static public function Factory($id) {
+        $class_name = ORM::GetClassName($id);
+        if ($class_name == "ORM")
+            $obj = new ORM($id);
+        else
+            $obj = new $class_name();
+
+        return $obj;
     }
 
     /**
@@ -152,24 +161,6 @@ class ORM {
         return $this;
     }
 
-    protected function _PrepareOrderHow($how) {
-        $true_array = Array("asc", "nulls,asc", "asc,nulls", "desc", "nulls,desc", "desc,null");
-
-        if (!in_array(strtolower($how), $true_array)) {
-            return "ASC";
-        }
-        return $how;
-    }
-
-    protected function _PrepareWhereHow($how) {
-        $true_array = Array("", "!", "><", "!><", "=", "%", "?", ">", "<", ">=", "<=");
-        if (!in_array($how, $true_array)) {
-            return "";
-        }
-        if ($how == "=")
-            return "";
-        return $how;
-    }
 
     /**
      * Включает сортировку по полю <b>$what</b> в порядке <b>$how</b>
@@ -230,42 +221,7 @@ class ORM {
     public function AndWhere($what, $how, $where) {
         return $this->Where($what, $how, $where);
     }
-
-    protected function _Init() {
-        $this->_data = array();
-        foreach ($this->standart_fields as $field) {
-            $this->_data[$field] = "";
-        }
-        if ($this->standart_props === FALSE) {
-            $this->standart_props = array();
-            $properties = CIBlockProperty::GetList(Array("id" => "asc"), Array("ACTIVE" => "Y", "IBLOCK_ID" => $this->IBlockID));
-            while ($prop = $properties->GetNext()) {
-                $prop['VALUE'] = "";
-                if ($prop['PROPERTY_TYPE'] == "L") {
-                    $prop['VALUE_ENUM_ID'] = "";
-                }
-                if (isset($prop['DEFAULT_VALUE'])) {
-                    if ($prop['DEFAULT_VALUE']) {
-                        if (isset($prop['VALUE_ENUM_ID'])) {
-                            $prop['VALUE_ENUM_ID'] = $prop['DEFAULT_VALUE'];
-                            $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $prop['CODE'], "ID" => $prop['VALUE_ENUM_ID']));
-                            $property_enum_value = $property_enum->GetNext();
-                            if ($property_enum_value['VALUE']) {
-                                $prop['VALUE'] = $property_enum_value['VALUE'];
-                            }
-                        } else {
-                            $prop['VALUE'] = $prop['DEFAULT_VALUE'];
-                        }
-                    }
-                }
-                $this->standart_props[] = $prop;
-            }
-        };
-        $this->_data_props = array();
-        foreach ($this->standart_props as $prop) {
-            $this->_data_props[$prop['CODE']] = $prop;
-        }
-    }
+    
 
     /**
      * Меняет установленный инфоблок.
@@ -307,45 +263,7 @@ class ORM {
         };
         $this->_Init();
     }
-
-    /**
-     * Создает объект нужного класса (по умолчанию ORM)
-     * @param type $id
-     * @return \class_name
-     */
-    static public function Factory($id) {
-        $class_name = ORM::GetClassName($id);
-        if ($class_name == "ORM")
-            $obj = new ORM($id);
-        else
-            $obj = new $class_name();
-
-        return $obj;
-    }
-
-    protected function _LoadDataFromBase() {
-        if ($tmp_data = $this->_res->GetNextElement()) {
-            $this->_data_props = $tmp_data->GetProperties();
-            $this->_data = $tmp_data->GetFields();
-            $this->_loaded = true;
-        }
-        return $tmp_data;
-    }
-
-    protected function _PrepareDatas() {
-        $this->arFilter['IBLOCK_ID'] = $this->IBlockID;
-        foreach ($this->arFilterBase as $item) {
-            $this->arFilter[$item['how'] . $item['what']] = $item['where'];
-        };
-    }
-
-    protected function _FindGo() {
-        $this->IblockSet();
-        $this->_PrepareDatas();
-        $this->_res = CIBlockElement::GetList(
-                        $this->arOrder, $this->arFilter, $this->arGroupBy, $this->arNavStartParams, $this->arSelectFields
-        );
-    }
+    
 
     /**
      * Загружает первый найденный элемент согласно фильтру, сортировки и т.п.
@@ -472,53 +390,7 @@ class ORM {
         $this->_Init();
         return CIBlockElement::Delete($ELEMENT_ID);
     }
-
-    protected function _PrepareUpdate() {
-        $this->_error_text = "";
-        if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
-            $this->_error_text = "Ни одно поле не изменено";
-            return array();
-        }
-        $update = array();
-        foreach ($this->_changed_fields as &$field_name) {
-            $update[$field_name] = $this->_data[$field_name];
-        };
-        if (count($this->_changed_props) > 0) {
-            foreach ($this->_data_props as $prop_name => &$prop_value) {
-                if (isset($prop_value["VALUE_ENUM_ID"])) {
-                    $update["PROPERTY_VALUES"][$prop_name] = $prop_value['VALUE_ENUM_ID'];
-                } else {
-                    $update["PROPERTY_VALUES"][$prop_name] = $prop_value['VALUE'];
-                }
-            }
-        };
-        if ($this->_tmp_el == false) {
-            $this->_tmp_el = new CIBlockElement;
-        }
-        return $update;
-    }
-
-    protected function _Update($update) {
-        if ($res = $this->_tmp_el->Update($this->_data['ID'], $update)) {
-            $this->_error_text = "";
-            return true;
-        } else {
-            $this->_error_text = $this->_tmp_el->LAST_ERROR;
-            return false;
-        }
-    }
-
-    protected function _Create($update) {
-        $update['IBLOCK_ID'] = $this->IBlockID;
-        if ($resID = $this->_tmp_el->Add($update)) {
-            $this->_error_text = "";
-            $this->_data['ID'] = $resID;
-            return true;
-        } else {
-            $this->_error_text = $this->_tmp_el->LAST_ERROR;
-            return false;
-        }
-    }
+    
 
     public function GetLastError() {
         return $this->_error_text;
@@ -586,7 +458,138 @@ class ORM {
         }
         return false;
     }
+    
+    protected function IblockSet() {
+        if ($this->IBlockID == 0) {
+            throw new Exception("для этого действия нужно сначала установить инфоблок");
+        }
+    }
+    
+    protected function _PrepareOrderHow($how) {
+        $true_array = Array("asc", "nulls,asc", "asc,nulls", "desc", "nulls,desc", "desc,null");
 
+        if (!in_array(strtolower($how), $true_array)) {
+            return "ASC";
+        }
+        return $how;
+    }
+
+    protected function _PrepareWhereHow($how) {
+        $true_array = Array("", "!", "><", "!><", "=", "%", "?", ">", "<", ">=", "<=");
+        if (!in_array($how, $true_array)) {
+            return "";
+        }
+        if ($how == "=")
+            return "";
+        return $how;
+    }
+
+    protected function _Init() {
+        $this->_data = array();
+        foreach ($this->standart_fields as $field) {
+            $this->_data[$field] = "";
+        }
+        if ($this->standart_props === FALSE) {
+            $this->standart_props = array();
+            $properties = CIBlockProperty::GetList(Array("id" => "asc"), Array("ACTIVE" => "Y", "IBLOCK_ID" => $this->IBlockID));
+            while ($prop = $properties->GetNext()) {
+                $prop['VALUE'] = "";
+                if ($prop['PROPERTY_TYPE'] == "L") {
+                    $prop['VALUE_ENUM_ID'] = "";
+                }
+                if (isset($prop['DEFAULT_VALUE'])) {
+                    if ($prop['DEFAULT_VALUE']) {
+                        if (isset($prop['VALUE_ENUM_ID'])) {
+                            $prop['VALUE_ENUM_ID'] = $prop['DEFAULT_VALUE'];
+                            $property_enum = CIBlockPropertyEnum::GetList(Array(), Array("IBLOCK_ID" => $this->IBlockID, "CODE" => $prop['CODE'], "ID" => $prop['VALUE_ENUM_ID']));
+                            $property_enum_value = $property_enum->GetNext();
+                            if ($property_enum_value['VALUE']) {
+                                $prop['VALUE'] = $property_enum_value['VALUE'];
+                            }
+                        } else {
+                            $prop['VALUE'] = $prop['DEFAULT_VALUE'];
+                        }
+                    }
+                }
+                $this->standart_props[] = $prop;
+            }
+        };
+        $this->_data_props = array();
+        foreach ($this->standart_props as $prop) {
+            $this->_data_props[$prop['CODE']] = $prop;
+        }
+    }
+
+    protected function _LoadDataFromBase() {
+        if ($tmp_data = $this->_res->GetNextElement()) {
+            $this->_data_props = $tmp_data->GetProperties();
+            $this->_data = $tmp_data->GetFields();
+            $this->_loaded = true;
+        }
+        return $tmp_data;
+    }
+
+    protected function _PrepareDatas() {
+        $this->arFilter['IBLOCK_ID'] = $this->IBlockID;
+        foreach ($this->arFilterBase as $item) {
+            $this->arFilter[$item['how'] . $item['what']] = $item['where'];
+        };
+    }
+
+    protected function _FindGo() {
+        $this->IblockSet();
+        $this->_PrepareDatas();
+        $this->_res = CIBlockElement::GetList(
+                        $this->arOrder, $this->arFilter, $this->arGroupBy, $this->arNavStartParams, $this->arSelectFields
+        );
+    }
+
+    protected function _PrepareUpdate() {
+        $this->_error_text = "";
+        if (count($this->_changed_fields) == 0 && count($this->_changed_props) == 0) {
+            $this->_error_text = "Ни одно поле не изменено";
+            return array();
+        }
+        $update = array();
+        foreach ($this->_changed_fields as &$field_name) {
+            $update[$field_name] = $this->_data[$field_name];
+        };
+        if (count($this->_changed_props) > 0) {
+            foreach ($this->_data_props as $prop_name => &$prop_value) {
+                if (isset($prop_value["VALUE_ENUM_ID"])) {
+                    $update["PROPERTY_VALUES"][$prop_name] = $prop_value['VALUE_ENUM_ID'];
+                } else {
+                    $update["PROPERTY_VALUES"][$prop_name] = $prop_value['VALUE'];
+                }
+            }
+        };
+        if ($this->_tmp_el == false) {
+            $this->_tmp_el = new CIBlockElement;
+        }
+        return $update;
+    }
+
+    protected function _Update($update) {
+        if ($res = $this->_tmp_el->Update($this->_data['ID'], $update)) {
+            $this->_error_text = "";
+            return true;
+        } else {
+            $this->_error_text = $this->_tmp_el->LAST_ERROR;
+            return false;
+        }
+    }
+
+    protected function _Create($update) {
+        $update['IBLOCK_ID'] = $this->IBlockID;
+        if ($resID = $this->_tmp_el->Add($update)) {
+            $this->_error_text = "";
+            $this->_data['ID'] = $resID;
+            return true;
+        } else {
+            $this->_error_text = $this->_tmp_el->LAST_ERROR;
+            return false;
+        }
+    }
 }
 
 ?>
